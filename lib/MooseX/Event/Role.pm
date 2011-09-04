@@ -97,17 +97,8 @@ sub once {
 
 BEGIN {
 
-=begin internal
-
-=method my method emit_stock( Str $event, Array[Any] *@args )
-
-The standard impelementation of the emit method-- calls the listeners
-immediately and in the order they were defined.
-
-=end internal
-
-=cut
-
+# The standard implementation of the emit method-- calls the listeners
+# immediately and in the order they were defined.
     my $emit_stock = sub {
         my $self = shift;
         my( $event, @args ) = @_;
@@ -124,18 +115,9 @@ immediately and in the order they were defined.
         return;
     };
 
-=begin internal
-
-=method my method emit_coro( Str $event, Array[Any] *@args )
-
-The L<Coro> implementation of the emit method-- calls each of the listeners
-in its own thread and emits immediate execution by calling cede before
-returning.
-
-=end internal
-
-=cut
-
+# The L<Coro> implementation of the emit method-- calls each of the listeners
+# in its own thread and emits immediate execution by calling cede before
+# returning.
     my $emit_coro = sub {
         my $self = shift;
         my( $event, @args ) = @_;

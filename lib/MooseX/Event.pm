@@ -126,7 +126,8 @@ no Any::Moose '::Exporter';
 
 =head1 DESCRIPTION
 
-This provides Node.js style events in a Role for Moose.
+This provides Node.js style events in a Role for Moose.  If you are looking
+to write a program using a Node.js style event loop, see the L<ONE> module.
 
 MooseX::Event is implemented as a Moose Role.  To add events to your object:
 
@@ -155,12 +156,20 @@ You can trigger events from your class with the "emit" method:
 
   $self->emit( event1 => ( "arg1", "arg2", "argn" ) );
 
-You can remove the has_event and has_events helpers by unimporting MooseX::Event
+Events receive the object that they're attached to as their first argument. They are almost
+a kind of fleeting sort of method:
 
-  no MooseX::event;
+   $obj->on( event1 => sub {
+       my $self = shift;
+       my( $arg1, $arg2, $arg3 ) = @_;
+       say "Arg3 was: $arg3\n";
+   }
 
-You may also be interested in reading about the L<ONE> modules that wrap the
-L<AnyEvent> modules using this class.
+
+At the bottom of your class, you should make sure you clean out your name space by calling
+no MooseX::Event.
+
+  no MooseX::Event;
 
 =head1 OTHER CLASSES LIKE THIS
 
