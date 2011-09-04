@@ -41,6 +41,9 @@ sub event_exists {
 Registers $listener as a listener on $event.  When $event is emitted ALL
 registered listeners are executed.
 
+If you are using L<Coro> then listeners are called in their own thread, which makes them
+fully Coro safe.  There is no need to use "unblock_sub" with MooseX::Event.
+
 Returns the listener coderef.
 
 =cut
@@ -116,8 +119,7 @@ BEGIN {
     };
 
 # The L<Coro> implementation of the emit method-- calls each of the listeners
-# in its own thread and emits immediate execution by calling cede before
-# returning.
+# in its own thread.
     my $emit_coro = sub {
         my $self = shift;
         my( $event, @args ) = @_;
@@ -139,7 +141,6 @@ BEGIN {
                 });
             }, $self, @args );
         }
-        Coro::cede();
 
         return;
     };
@@ -149,8 +150,9 @@ BEGIN {
 Normally called within the class using the MooseX::Event role.  This calls all
 of the registered listeners on $event with @args.
 
-If you're using coroutines then each listener will get its own thread and
-emit will cede before returning.
+If you're using coroutines then each listener is executed in its own thread. 
+Emit will return immediately, the event listeners won't execute until you
+cede or block in some manner.
 
 =cut
 

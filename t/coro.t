@@ -35,3 +35,4 @@ $te->on( ping => sub {
     } );
 
 $te->emit( "ping" );
+Coro::cede(); # We have to cede to let the event listeners execute
