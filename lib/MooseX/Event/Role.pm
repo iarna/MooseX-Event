@@ -52,7 +52,8 @@ sub on {
     my $self = shift;
     my( $event, $listener, @wrappers ) = @_;
     if ( ! $self->event_exists($event) ) {
-        die "Event $event does not exist";
+        require Carp;
+        Carp::confess("Event $event does not exist");
     }
     $self->_listeners->{$event} ||= [];
     $self->_aliases->{$event} ||= {};
@@ -106,7 +107,8 @@ BEGIN {
         my $self = shift;
         my( $event, @args ) = @_;
         if ( ! $self->event_exists($event) ) {
-            die "Event $event does not exist";
+            require Carp;
+            Carp::confess("Event $event does not exist");
         }
         return unless exists $self->_listeners->{$event};
         my $ce = $self->current_event;
@@ -124,13 +126,14 @@ BEGIN {
         my $self = shift;
         my( $event, @args ) = @_;
         if ( ! $self->event_exists($event) ) {
-            die "Event $event does not exist";
+            require Carp;
+            Carp::confess("Event $event does not exist");
         }
         return unless exists $self->_listeners->{$event};
 
         foreach my $todo ( @{ $self->_listeners->{$event} } ) {
             my $ce;
-            &Coro::async( sub {
+            &Coro::async_pool( sub {
                 &Coro::on_enter( sub {
                     $ce  = $self->current_event;
                     $self->current_event($event);
@@ -150,15 +153,20 @@ BEGIN {
 Normally called within the class using the MooseX::Event role.  This calls all
 of the registered listeners on $event with @args.
 
-If you're using coroutines then each listener is executed in its own thread. 
+If you're using L<Coro> then each listener is executed in its own thread. 
 Emit will return immediately, the event listeners won't execute until you
-cede or block in some manner.
+cede or block in some manner.  Normally this isn't something you have to
+think about.
+
+This means that MooseX::Event's listeners are Coro safe and can safely cede
+or do other Coro thread related tasks.  That is to say, you don't ever need
+to use unblock_sub.
 
 =cut
 
     sub emit {
         no warnings 'redefine';
-        if ( defined *Coro::async{CODE} ) {
+        if ( defined *Coro::async_pool{CODE} ) {
             *emit = $emit_coro;
             goto $emit_coro;
         }
@@ -207,7 +215,8 @@ sub remove_listener {
     my $self = shift;
     my( $event, $listener ) = @_;
     if ( ! $self->event_exists($event) ) {
-        die "Event $event does not exist";
+        require Carp;
+        Carp::confess("Event $event does not exist");
     }
     return unless exists $self->_listeners->{$event};
     
