@@ -126,6 +126,20 @@ no Any::Moose '::Exporter';
 
 =head1 DESCRIPTION
 
+MooseX::Event provides an event framework for Moose classes that is inspired
+by and similar to the one included with Node.js.  It provides class helpers
+to let you declare that you emit named events, methods for you to emit
+events with and methods to allow users of your class to declare event
+listeners.  If you want to make your class emit events, you're in the right
+place.
+
+Alternatively, if you just want to use a suite of classes whose use an event
+API like this one, you'll want to look at the L<ONE> module.
+ONE provides a layer on top of AnyEvent that uses MooseX::Event as it's
+interface.  This gives you an arguably nicer, and definitely more consistant
+interface to write your event based programs.
+
+
 This provides Node.js style events in a Role for Moose.  If you are looking
 to write a program using a Node.js style event loop, see the L<ONE> module.
 
