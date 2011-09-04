@@ -159,7 +159,10 @@ You can remove the has_event and has_events helpers by unimporting MooseX::Event
 
   no MooseX::event;
 
-=head1 RELATED
+You may also be interested in reading about the L<ONE> modules that wrap the
+L<AnyEvent> modules using this class.
+
+=head1 OTHER CLASSES LIKE THIS
 
 =over
 
