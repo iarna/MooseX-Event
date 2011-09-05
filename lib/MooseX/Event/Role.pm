@@ -36,13 +36,19 @@ sub event_exists {
     return $self->can("event:$event");
 }
 
-=method our method on( Str $event, CodeRef $listener ) returns CodeRef
+=method our method on( Array[Str] *@events, CodeRef $listener, ArrayRef[CodeRef] $wrappers=[] ) returns CodeRef
 
-Registers $listener as a listener on $event.  When $event is emitted ALL
-registered listeners are executed.
+Registers $listener as a listener on $event.  When $event is emitted all
+registered listeners are executed.  If $wrappers are passed then each is
+called in turn to wrap $listener in another CodeRef.  The CodeRefs in
+wrappers are expected to take a listener as an argument and return a wrapped
+listener.  This is how "once" is implemented-- it wraps the listener in a
+CodeRef that unregisters the listener when it's called, before passing
+control to the listener.
 
-If you are using L<Coro> then listeners are called in their own thread, which makes them
-fully Coro safe.  There is no need to use "unblock_sub" with MooseX::Event.
+If you are using L<Coro> then listeners are called in their own thread,
+which makes them fully Coro safe.  There is no need to use "unblock_sub"
+with MooseX::Event.
 
 Returns the listener coderef.
 
@@ -50,7 +56,12 @@ Returns the listener coderef.
 
 sub on {
     my $self = shift;
-    my( $event, $listener, @wrappers ) = @_;
+    my $wrappers = [];
+    if (ref $_[-1] eq 'ARRAY') {
+        $wrappers = pop;
+    }
+    my $listener = pop;
+    my @events = @_;
     if ( ! $self->event_exists($event) ) {
         require Carp;
         Carp::confess("Event $event does not exist");
@@ -86,7 +97,7 @@ Returns the listener coderef.
 
 sub once {
     my $self = shift;
-    $self->on( @_, sub {
+    $self->on( @_, [sub {
         my($listener) = @_;
         my $wrapped;
         $wrapped = sub {
@@ -96,7 +107,7 @@ sub once {
             goto $listener;
         };
         return $wrapped;
-    });
+    }]);
 }
 
 BEGIN {
