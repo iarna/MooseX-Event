@@ -189,6 +189,8 @@ no MooseX::Event.
 
 =over
 
+=item L<MooseX::Role::Listenable>
+
 =item L<Object::Event>
 
 =item L<Mixin::Event::Dispatch>
@@ -204,6 +206,8 @@ no MooseX::Event.
 =item L<Reflex::Role::Reactive>
 
 =item L<Aspect::Library::Listenable>
+
+=item L<Class::Listener>
 
 =item L<http://nodejs.org/docs/v0.5.4/api/events.html>
 
