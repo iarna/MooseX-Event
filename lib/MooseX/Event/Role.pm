@@ -61,28 +61,29 @@ sub on {
         $wrappers = pop;
     }
     my $listener = pop;
-    my @events = @_;
-    if ( ! $self->event_exists($event) ) {
-        require Carp;
-        Carp::confess("Event $event does not exist");
-    }
-    $self->_listeners->{$event} ||= [];
-    $self->_aliases->{$event} ||= {};
-    if ( ! @{$self->_listeners->{$event}} and $self->can('activate_event') ) {
-        $self->activate_event($event);
-    }
     my @aliases;
     my $wrapped = $listener;
     for ( reverse(@wrappers), reverse(@MooseX::Event::listener_wrappers) ) {
         push @aliases, 0+$wrapped;
         $wrapped = $_->( $wrapped );
     }
-    $self->_aliases->{$event}{0+$wrapped} = \@aliases;
-    for ( @aliases ) {
-        $self->_aliases->{$event}{$_} = $wrapped;
+    for my $event (@_) {
+        if ( ! $self->event_exists($event) ) {
+            require Carp;
+            Carp::confess("Event $event does not exist");
+        }
+        $self->_listeners->{$event} ||= [];
+        $self->_aliases->{$event} ||= {};
+        if ( ! @{$self->_listeners->{$event}} and $self->can('activate_event') ) {
+            $self->activate_event($event);
+        }
+        $self->_aliases->{$event}{0+$wrapped} = \@aliases;
+        for ( @aliases ) {
+            $self->_aliases->{$event}{$_} = $wrapped;
+        }
+        $self->emit('new_listener', $event, $wrapped);
+        push @{ $self->_listeners->{$event} }, $wrapped;
     }
-    $self->emit('new_listener', $event, $wrapped);
-    push @{ $self->_listeners->{$event} }, $wrapped;
     return $wrapped;
 }
 
