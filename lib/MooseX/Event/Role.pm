@@ -63,7 +63,7 @@ sub on {
     my $listener = pop;
     my @aliases;
     my $wrapped = $listener;
-    for ( reverse(@wrappers), reverse(@MooseX::Event::listener_wrappers) ) {
+    for ( reverse(@$wrappers), reverse(@MooseX::Event::listener_wrappers) ) {
         push @aliases, 0+$wrapped;
         $wrapped = $_->( $wrapped );
     }
