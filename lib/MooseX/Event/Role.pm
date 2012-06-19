@@ -27,6 +27,23 @@ listener being installed.
 
 MooseX::Event::has_event('new_listener');
 
+=event first_listener( Str $event, CodeRef $listener )
+
+Called when a listener is added and no listeners were yet registered for this event.
+
+=cut
+
+MooseX::Event::has_event('first_listener');
+
+=event no_listeners( Str $event )
+
+Called when a listener is removed and there are no more listeners registered
+for this event.  This will fire prior to new_listener.
+
+=cut
+
+MooseX::Event::has_event('no_listeners');
+
 =method method event_exists( Str $event ) returns Bool
 
 Returns true if $event is a valid event name for this class.
@@ -78,16 +95,18 @@ sub on {
             require Carp;
             Carp::confess("Event $event does not exist");
         }
+        if ( ! @{$self->_listeners->{$event}} and @{$self->_listeners->{'first_listener'}} ) {
+            $self->emit('first_listener', $event, $wrapped )
+        }
         $self->_listeners->{$event} ||= [];
         $self->_aliases->{$event} ||= {};
-        if ( ! @{$self->_listeners->{$event}} and $self->can('activate_event') ) {
-            $self->activate_event($event);
-        }
         $self->_aliases->{$event}{0+$wrapped} = \@aliases;
         for ( @aliases ) {
             $self->_aliases->{$event}{$_} = $wrapped;
         }
-        $self->emit('new_listener', $event, $wrapped);
+        if ( @{$self->_listeners->{'new_listener'}} ) {
+            $self->emit('new_listener', $event, $wrapped);
+        }
         push @{ $self->_listeners->{$event} }, $wrapped;
     }
     return $wrapped;
@@ -208,14 +227,14 @@ sub remove_all_listeners {
         my( $event ) = @_;
         delete $self->_listeners->{$event};
         delete $self->_aliases->{$event};
-        if ( $self->can('deactivate_event') ) {
-            $self->deactivate_event($event);
+        if ( @{$self->_listeners->{'no_listeners'}} ) {
+            $self->emit('no_listeners', $event )
         }
     }
     else {
-        if ( $self->can('deactivate_event') ) {
+        if ( @{$self->_listeners->{'no_listeners'}} ) {
             for ( keys %{$self->_listeners} ) {
-                $self->deactivate_event($_);
+                $self->emit('no_listeners', $_ )
             }
         }
         %{ $self->_listeners } = ();
@@ -253,8 +272,8 @@ sub remove_listener {
     $self->_listeners->{$event} =
         [ grep { $_ != $listener } @{ $self->_listeners->{$event} } ];
         
-    if ( ! @{$self->_listeners->{$event}} and $self->can('deactivate_event') ) {
-        $self->deactivate_event($event);
+    if ( ! @{$self->_listeners->{$event}} and @{$self->_listeners->{'no_listeners'}} ) {
+        $self->emit('no_listeners', $event )
     }
 }
 
