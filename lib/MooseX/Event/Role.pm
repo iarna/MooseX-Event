@@ -3,10 +3,13 @@ package MooseX::Event::Role;
 use MooseX::Event ();
 use Any::Moose 'Role';
 
+# Stores our active listeners
 has '_listeners'    => (isa=>'HashRef', is=>'ro', default=>sub{ {} });
+# Stores our wrapped sub aliases, so that we can refer to any given listener
+# using either the original sub, or any wrapping layer.
 has '_aliases'      => (isa=>'HashRef', is=>'ro', default=>sub{ {} });
 
-=attr our Str $.current_event is rw
+=attr my Str $.current_event is rw
 
 This is the name of the current event being triggered, or undef if no event
 is being triggered.
@@ -24,7 +27,7 @@ listener being installed.
 
 MooseX::Event::has_event('new_listener');
 
-=method our method event_exists( Str $event ) returns Bool
+=method method event_exists( Str $event ) returns Bool
 
 Returns true if $event is a valid event name for this class.
 
@@ -36,7 +39,10 @@ sub event_exists {
     return $self->can("event:$event");
 }
 
-=method our method on( Array[Str] *@events, CodeRef $listener, ArrayRef[CodeRef] $wrappers=[] ) returns CodeRef
+# Having the first argument flatten the argument list isn't actually allowed
+# in Rakudo (and possibly P6 too)
+
+=method method on( Array[Str] *@events, CodeRef $listener, ArrayRef[CodeRef] $wrappers=[] ) returns CodeRef
 
 Registers $listener as a listener on $event.  When $event is emitted all
 registered listeners are executed.  If $wrappers are passed then each is
@@ -87,7 +93,7 @@ sub on {
     return $wrapped;
 }
 
-=method our method once( Str $event, CodeRef $listener ) returns CodeRef
+=method method once( Str $event, CodeRef $listener ) returns CodeRef
 
 Registers $listener as a listener on $event. Event listeners registered via
 once will emit only once.
@@ -160,7 +166,7 @@ BEGIN {
         return;
     };
 
-=method our method emit( Str $event, Array[Any] *@args )
+=method method emit( Str $event, *@args )
 
 Normally called within the class using the MooseX::Event role.  This calls all
 of the registered listeners on $event with @args.
@@ -190,7 +196,7 @@ to use unblock_sub.
 
 }
 
-=method our method remove_all_listeners( Str $event )
+=method method remove_all_listeners( Str $event )
 
 Removes all listeners for $event
 
@@ -217,7 +223,7 @@ sub remove_all_listeners {
     }
 }
 
-=method our method remove_listener( Str $event, CodeRef $listener )
+=method method remove_listener( Str $event, CodeRef $listener )
 
 Removes $listener from $event
 

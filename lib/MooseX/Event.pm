@@ -45,7 +45,7 @@ use Any::Moose '::Exporter';
 
 our @listener_wrappers;
 
-=classmethod our method add_listener_wrapper( CodeRef $wrapper ) returns CodeRef
+=classmethod method add_listener_wrapper( CodeRef $wrapper ) returns CodeRef
 
 Wrappers are called in reverse declaration order.  They take a the listener
 to be added as an argument, and return a wrapped listener.
@@ -58,7 +58,7 @@ sub add_listener_wrapper {
     return $wrapper;
 }
 
-=classmethod our method remove_listener_wrapper( CodeRef $wrapper )
+=classmethod method remove_listener_wrapper( CodeRef $wrapper )
 
 Removes a previously added listener wrapper.
 
@@ -71,9 +71,9 @@ sub remove_listener_wrapper {
 }
 
 
-=helper sub has_event( Array[Str] *@event_names ) is export
+=helper sub has_event( *@event_names ) is export
 
-=helper sub has_events( Array[Str] *@event_names ) is export
+=helper sub has_events( *@event_names ) is export
 
 Registers your class as being able to emit the event names listed.
 
