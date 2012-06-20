@@ -56,6 +56,28 @@ sub event_exists {
     return $self->can("event:$event");
 }
 
+=method method event_listeners( Str $event ) returns Array|Int
+
+In array context, returns a list of all of the event listeners for a
+particular event.  In scalar context, returns the number of listeners
+registered.
+
+=cut
+
+sub event_listeners {
+    my $self = shift;
+    my($event) = @_;
+    if ( ! $self->event_exists($event) ) {
+        require Carp;
+        Carp::confess("Event $event does not exist");
+    }
+    my @listeners;
+    if (exists $self->_listeners->{$event}) {
+        @listeners = $self->_listeners->{$event};
+    }
+    return wantarray? @listeners : scalar @listeners;
+}
+
 # Having the first argument flatten the argument list isn't actually allowed
 # in Rakudo (and possibly P6 too)
 
@@ -95,7 +117,7 @@ sub on {
             require Carp;
             Carp::confess("Event $event does not exist");
         }
-        if ( ! @{$self->_listeners->{$event}} and @{$self->_listeners->{'first_listener'}} ) {
+        if ( ! $self->event_listeners($event) and $self->event_listeners('first_listener') ) {
             $self->emit('first_listener', $event, $wrapped )
         }
         $self->_listeners->{$event} ||= [];
@@ -104,7 +126,7 @@ sub on {
         for ( @aliases ) {
             $self->_aliases->{$event}{$_} = $wrapped;
         }
-        if ( @{$self->_listeners->{'new_listener'}} ) {
+        if ( $self->event_listeners('new_listener') ) {
             $self->emit('new_listener', $event, $wrapped);
         }
         push @{ $self->_listeners->{$event} }, $wrapped;
@@ -227,12 +249,12 @@ sub remove_all_listeners {
         my( $event ) = @_;
         delete $self->_listeners->{$event};
         delete $self->_aliases->{$event};
-        if ( @{$self->_listeners->{'no_listeners'}} ) {
+        if ( $self->event_listeners('no_listeners') ) {
             $self->emit('no_listeners', $event )
         }
     }
     else {
-        if ( @{$self->_listeners->{'no_listeners'}} ) {
+        if ( $self->event_listeners('no_listeners') ) {
             for ( keys %{$self->_listeners} ) {
                 $self->emit('no_listeners', $_ )
             }
@@ -272,7 +294,7 @@ sub remove_listener {
     $self->_listeners->{$event} =
         [ grep { $_ != $listener } @{ $self->_listeners->{$event} } ];
         
-    if ( ! @{$self->_listeners->{$event}} and @{$self->_listeners->{'no_listeners'}} ) {
+    if ( ! $self->event_listeners($event) and $self->event_listeners('no_listeners') ) {
         $self->emit('no_listeners', $event )
     }
 }
