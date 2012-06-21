@@ -149,7 +149,7 @@ sub once {
         my($listener) = @_;
         my $wrapped;
         $wrapped = sub {
-            my $self = shift;
+            my($self) = @_; # No shift, we don't want to change our arg list
             $self->remove_listener($self->current_event=>$wrapped);
             $wrapped=undef;
             goto $listener;
