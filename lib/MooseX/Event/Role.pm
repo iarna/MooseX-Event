@@ -299,6 +299,19 @@ sub remove_listener {
     }
 }
 
+=method DEMOLISH
+We clean up after ourselves by clearing out all listeners prior to shutting down.
+=cut
+sub DEMOLISH {
+    my $self = shift;
+    $self->remove_all_listeners();
+    # If Coro is loaded, immediately cede to ensure that any events triggered
+    # by removing listeners are executed before the object is destroyed
+    if ( defined *Coro::cede{CODE} ) {
+        Coro::cede();
+    }
+}
+
 1;
 
 =pod
