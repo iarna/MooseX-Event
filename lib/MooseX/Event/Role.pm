@@ -191,17 +191,18 @@ BEGIN {
         return unless exists $self->_listeners->{$event};
 
         foreach my $todo ( @{ $self->_listeners->{$event} } ) {
-            my $ce;
             &Coro::async_pool( sub {
+                my $prev_event;
                 &Coro::on_enter( sub {
-                    $ce  = $self->current_event;
+                    $prev_event = $self->current_event;
                     $self->current_event($event);
                 });
-                $todo->(@_);
                 &Coro::on_leave( sub {
-                    $self->current_event($ce);
+                    $self->current_event($prev_event);
+                    undef $prev_event;
                 });
-            }, $self, @args );
+                $todo->($self,@args);
+            });
         }
 
         return;
@@ -234,7 +235,6 @@ to use unblock_sub.
             goto $emit_stock;
         }
     }
-
 }
 
 =method method remove_all_listeners( Str $event )
