@@ -2,21 +2,20 @@
 package MooseX::Event::Role;
 use MooseX::Event ();
 use Any::Moose 'Role';
+use Scalar::Util qw( refaddr blessed );
+use Event::Wrappable ();
 
 # Stores our active listeners
 has '_listeners'    => (isa=>'HashRef', is=>'ro', default=>sub{ {} });
-# Stores our wrapped sub aliases, so that we can refer to any given listener
-# using either the original sub, or any wrapping layer.
-has '_aliases'      => (isa=>'HashRef', is=>'ro', default=>sub{ {} });
 
-=attr my Str $.current_event is rw
+my %events;
+
+=attr my Str $.current_event is ro
 
 This is the name of the current event being triggered, or undef if no event
 is being triggered.
 
 =cut
-
-has 'current_event' => (isa=>'Str|Undef', is=>'rw');
 
 =event new_listener( Str $event, CodeRef $listener )
 
@@ -81,7 +80,7 @@ sub event_listeners {
 # Having the first argument flatten the argument list isn't actually allowed
 # in Rakudo (and possibly P6 too)
 
-=method method on( Array[Str] *@events, CodeRef $listener, ArrayRef[CodeRef] $wrappers=[] ) returns CodeRef
+=method method on( Array[Str] *@events, CodeRef $listener ) returns CodeRef
 
 Registers $listener as a listener on $event.  When $event is emitted all
 registered listeners are executed.  If $wrappers are passed then each is
@@ -101,37 +100,29 @@ Returns the listener coderef.
 
 sub on {
     my $self = shift;
-    my $wrappers = [];
-    if (ref $_[-1] eq 'ARRAY') {
-        $wrappers = pop;
-    }
     my $listener = pop;
-    my @aliases;
-    my $wrapped = $listener;
-    for ( reverse(@$wrappers), reverse(@MooseX::Event::listener_wrappers) ) {
-        push @aliases, 0+$wrapped;
-        $wrapped = $_->( $wrapped );
+    my $first_event = $_[0];
+
+    # We rewrap Event::Wrappable objects so that we can name them
+    if ( ! blessed $listener or ! $listener->isa("Event::Wrappable") ) {
+        $listener = &Event::Wrappable::event( $listener );
     }
+
     for my $event (@_) {
         if ( ! $self->event_exists($event) ) {
             require Carp;
             Carp::confess("Event $event does not exist");
         }
         if ( ! $self->event_listeners($event) and $self->event_listeners('first_listener') ) {
-            $self->emit('first_listener', $event, $wrapped )
+            $self->emit('first_listener', $event, $listener )
         }
         $self->_listeners->{$event} ||= [];
-        $self->_aliases->{$event} ||= {};
-        $self->_aliases->{$event}{0+$wrapped} = \@aliases;
-        for ( @aliases ) {
-            $self->_aliases->{$event}{$_} = $wrapped;
-        }
         if ( $self->event_listeners('new_listener') ) {
-            $self->emit('new_listener', $event, $wrapped);
+            $self->emit('new_listener', $event, $listener);
         }
-        push @{ $self->_listeners->{$event} }, $wrapped;
+        push @{ $self->_listeners->{$event} }, $listener;
     }
-    return $wrapped;
+    return $listener;
 }
 
 =method method once( Str $event, CodeRef $listener ) returns CodeRef
@@ -145,75 +136,107 @@ Returns the listener coderef.
 
 sub once {
     my $self = shift;
-    $self->on( @_, [sub {
-        my($listener) = @_;
-        my $wrapped;
-        $wrapped = sub {
+    my $listener = pop;
+    my @events = @_;
+    my $wrapped;
+    Event::Wrappable->wrap_events( sub {
+       $wrapped = $self->on( @events, $listener);
+    }, sub {
+        my( $listener ) = @_;
+        return sub {
             my($self) = @_; # No shift, we don't want to change our arg list
             $self->remove_listener($self->current_event=>$wrapped);
-            $wrapped=undef;
             goto $listener;
         };
-        return $wrapped;
-    }]);
+    } );
+    return $wrapped;
 }
 
 BEGIN {
+    # What we're doing here is building up a separate set of methods for
+    # with coroutines and without.
 
-# The standard implementation of the emit method-- calls the listeners
-# immediately and in the order they were defined.
-    my $emit_stock = sub {
-        my $self = shift;
-        my( $event, @args ) = @_;
-        if ( ! $self->event_exists($event) ) {
-            require Carp;
-            Carp::confess("Event $event does not exist");
-        }
-        return unless exists $self->_listeners->{$event};
-        my $ce = $self->current_event;
-        $self->current_event( $event );
-        foreach ( @{ $self->_listeners->{$event} } ) {
-            $_->($self,@args);
-        }
-        $self->current_event($ce);
-        return;
-    };
+    # The first time you call one of these methods, we check to see if
+    # coroutines are loaded and from that point forward only use the
+    # version appropriate to that.  The other versions should then be
+    # garbage collected.
 
-# The L<Coro> implementation of the emit method-- calls each of the listeners
-# in its own thread.
-    my $emit_coro = sub {
-        my $self = shift;
-        my( $event, @args ) = @_;
-        if ( ! $self->event_exists($event) ) {
-            require Carp;
-            Carp::confess("Event $event does not exist");
-        }
-        return unless exists $self->_listeners->{$event};
+    my %alternatives;
 
-        foreach my $todo ( @{ $self->_listeners->{$event} } ) {
-            &Coro::async_pool( sub {
-                my $prev_event;
-                &Coro::on_enter( sub {
-                    $prev_event = $self->current_event;
-                    $self->current_event($event);
-                });
-                &Coro::on_leave( sub {
-                    $self->current_event($prev_event);
-                    undef $prev_event;
-                });
-                $todo->($self,@args);
-            });
-        }
+    {
+        my @events;
+        $alternatives{'stock'} = {
+            "push_event_name" => sub {
+                push @events, @_;
+            },
+            "pop_event_name" => sub {
+                pop @events;
+            },
+            "current_event" => sub {
+                my $self = shift;
+                return $events[0];
+            },
+            "emit" => sub {
+                my $self = shift;
+                my( $event, @args ) = @_;
+                if ( ! $self->event_exists($event) ) {
+                    require Carp;
+                    Carp::confess("Event $event does not exist");
+                }
+                return unless exists $self->_listeners->{$event};
+                push_event_name($event);
+                foreach ( @{ $self->_listeners->{$event} } ) {
+                    $_->($self,@args) if defined $_;
+                }
+                pop_event_name();
+                return;
+            },
+        };
+    }
 
-        return;
-    };
+    {
+        my %events;
+        $alternatives{'coro'} = {
+            "push_event_name" => sub {
+                push @{$events{refaddr $Coro::current}}, @_;
+            },
+            "pop_event_name" => sub {
+                pop @{$events{refaddr $Coro::current}};
+            },
+            "current_event" => sub {
+                my $self = shift;
+                my $coro = refaddr $Coro::current;
+                $events{$coro} ||= [];
+                return $events{$coro}->[0];
+            },
+            "emit" => sub {
+                my $self = shift;
+                my( $event, @args ) = @_;
+                if ( ! $self->event_exists($event) ) {
+                    require Carp;
+                    Carp::confess("Event $event does not exist");
+                }
+                return unless exists $self->_listeners->{$event};
+
+                foreach my $todo ( @{ $self->_listeners->{$event} } ) {
+                    &Coro::async_pool( sub {
+                        push_event_name($event);
+                        $todo->($self,@args) if defined $todo;
+                        pop_event_name();
+                    });
+                }
+
+                return;
+            },
+        };
+    }
 
 =method method emit( Str $event, *@args )
 
 Normally called within the class using the MooseX::Event role.  This calls all
 of the registered listeners on $event with @args.
 
-If you're using L<Coro> then each listener is executed in its own thread. 
+If you're using L<Coro> then each listener is executed in its own thread.
 Emit will return immediately, the event listeners won't execute until you
 cede or block in some manner.  Normally this isn't something you have to
 think about.
@@ -224,17 +247,44 @@ to use unblock_sub.
 
 =cut
 
-    sub emit {
+    my $use_coro_or_not = sub {
         no warnings 'redefine';
-        if ( defined *Coro::async_pool{CODE} ) {
-            *emit = $emit_coro;
-            goto $emit_coro;
+        my $sub = shift;
+        my $which;
+
+        if ( defined $Coro::current ) {
+            $which = $alternatives{'coro'};
         }
         else {
-            *emit = $emit_stock;
-            goto $emit_stock;
+            $which = $alternatives{'stock'};
         }
+        my $class = ref $_[0];
+        no strict 'refs';
+        # This is a role, so we want to modify both our role and the class
+        # we're used in directly.
+        *{$class.'::push_event_name'} = $which->{'push_event_name'};
+        *{$class.'::pop_event_name'}  = $which->{'pop_event_name'};
+        *{$class.'::emit'}            = $which->{'emit'};
+        *{$class.'::current_event'}   = $which->{'current_event'};
+        return $which->{$sub};
+    };
+
+    sub push_event_name {
+        goto $use_coro_or_not->( "push_event_name", @_ );
     }
+
+    sub pop_event_name {
+        goto $use_coro_or_not->( "pop_event_name", @_ );
+    }
+
+    sub emit {
+        goto $use_coro_or_not->( "emit", @_ );
+    };
+
+    sub current_event {
+        goto $use_coro_or_not->( "current_event", @_ );
+    }
+
 }
 
 =method method remove_all_listeners( Str $event )
@@ -248,7 +298,6 @@ sub remove_all_listeners {
     if ( @_ ) {
         my( $event ) = @_;
         delete $self->_listeners->{$event};
-        delete $self->_aliases->{$event};
         if ( $self->event_listeners('no_listeners') ) {
             $self->emit('no_listeners', $event )
         }
@@ -260,7 +309,6 @@ sub remove_all_listeners {
             }
         }
         %{ $self->_listeners } = ();
-        %{ $self->_aliases } = ();
     }
 }
 
@@ -277,23 +325,14 @@ sub remove_listener {
         require Carp;
         Carp::confess("Event $event does not exist");
     }
-    return unless exists $self->_listeners->{$event};
-    
-    my $aliases = $self->_aliases->{$event}{0+$listener};
-    delete $self->_aliases->{$event}{0+$listener};
-    
-    if ( ref $aliases eq "ARRAY" ) {
-        for ( @$aliases ) {
-            delete $self->_aliases->{$event}{$_};
-        }
-    }
-    else {
-        $listener = $aliases;
-    }
+    my $listeners = $self->_listeners;
 
-    $self->_listeners->{$event} =
-        [ grep { $_ != $listener } @{ $self->_listeners->{$event} } ];
-        
+    return unless exists $listeners->{$event};
+
+    my $oid = $listener->object_id;
+    $listeners->{$event} =
+        [ grep { defined $_ and $_->object_id) != $oid } @{ $listeners->{$event} } ];
+
     if ( ! $self->event_listeners($event) and $self->event_listeners('no_listeners') ) {
         $self->emit('no_listeners', $event )
     }

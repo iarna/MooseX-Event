@@ -1,6 +1,15 @@
 Revision history for perl module MooseX::Event
 
 {{$NEXT}}
+- Move event wrapping out to Event::Wrappable
+
+- Make coroutine support have lower overhead by storing the current event in
+  a hash indexed by the coroutine rather then using on_enter and on_exit
+  handlers.
+
+- We drop the ability to use any sub ref that went into creating a listener
+  as a key to it, this is because you know create your wrapped listener with
+  the "event" helper and you can take a ref to it then.
 
 v0.2.0    2011-09-04
 - Split On::Event into MooseX::Event and ONE

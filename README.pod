@@ -1,3 +1,7 @@
+=pod
+
+=encoding utf-8
+
 =head1 NAME
 
 MooseX::Event - A Node style event Role for Moose
@@ -19,8 +23,6 @@ version 0.3.0
       }
   }
   
-  use 5.10.0;
-
   my $example = Example->new;
 
   $example->on( pinged => sub { say "Got a ping!" } );
@@ -97,24 +99,15 @@ no MooseX::Event.
 
   no MooseX::Event;
 
-=head1 CLASS METHODS
-
-=head2 our method add_listener_wrapper( CodeRef $wrapper ) returns CodeRef
-
-Wrappers are called in reverse declaration order.  They take a the listener
-to be added as an argument, and return a wrapped listener.
-
-=head2 our method remove_listener_wrapper( CodeRef $wrapper )
-
-Removes a previously added listener wrapper.
-
 =head1 HELPERS
 
-=head2 sub has_event( Array[Str] *@event_names ) is export
+=head2 sub has_event( *@event_names ) is export
 
-=head2 sub has_events( Array[Str] *@event_names ) is export
+=head2 sub has_events( *@event_names ) is export
 
 Registers your class as being able to emit the event names listed.
+
+=for test_synopsis use v5.10.0;
 
 =head1 OTHER CLASSES LIKE THIS
 
@@ -146,7 +139,7 @@ Registers your class as being able to emit the event names listed.
 
 =head1 SEE ALSO
 
-Please see those modules/websites for more information related to this module.
+
 
 =over 4
 
@@ -160,15 +153,14 @@ L<MooseX::Event::Role::ClassMethods|MooseX::Event::Role::ClassMethods>
 
 =back
 
-=for :stopwords cpan testmatrix url annocpan anno bugtracker rt cpants kwalitee diff irc mailto metadata placeholders
+=head1 SOURCE
+
+The development version is on github at L<http://https://github.com/iarna/MooseX-Event>
+and may be cloned from L<git://https://github.com/iarna/MooseX-Event.git>
+
+=for :stopwords cpan testmatrix url annocpan anno bugtracker rt cpants kwalitee diff irc mailto metadata placeholders metacpan
 
 =head1 SUPPORT
-
-=head2 Perldoc
-
-You can find documentation for this module with the perldoc command.
-
-  perldoc MooseX::Event
 
 =head2 Websites
 
@@ -179,19 +171,17 @@ in addition to those websites please use your favorite search engine to discover
 
 =item *
 
-Search CPAN
+MetaCPAN
 
-The default CPAN search engine, useful to view POD in HTML format.
+A modern, open-source CPAN search engine, useful to view POD in HTML format.
 
-L<http://search.cpan.org/dist/MooseX-Event>
+L<http://metacpan.org/release/MooseX-Event>
 
 =back
 
 =head2 Bugs / Feature Requests
 
-Please report any bugs or feature requests by email to C<bug-moosex-event at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=MooseX-Event>. You will be automatically notified of any
-progress on the request by the system.
+Please report any bugs at L<https://github.com/iarna/MooseX-Event/issues>.
 
 =head2 Source Code
 
@@ -209,7 +199,7 @@ Rebecca Turner <becca@referencethis.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Rebecca Turner.
+This software is copyright (c) 2012 by Rebecca Turner.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
@@ -236,3 +226,7 @@ RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
 FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
 SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGES.
+
+
+=cut
+

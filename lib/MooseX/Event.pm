@@ -3,6 +3,8 @@ package MooseX::Event;
 use Any::Moose ();
 use Any::Moose '::Exporter';
 
+use constant ROLE_CLASS => 'MooseX::Event::Role';
+
 {
     my($import,$unimport,$init_meta) = any_moose('::Exporter')->build_import_methods(
         as_is => [qw( has_event has_events )],
@@ -32,42 +34,14 @@ use Any::Moose '::Exporter';
 
         # I would expect that 'base_class_roles' in setup_import_methods would
         # do the below, but no, it doesn't.
-        if ( ! any_moose('::Util')->can('does_role')->( $caller, 'MooseX::Event::Role' ) ) {
-             require MooseX::Event::Role;
-             MooseX::Event::Role->meta->apply( $caller->meta, %{$with_args} );
+        if ( ! any_moose('::Util')->can('does_role')->( $caller, ROLE_CLASS ) ) {
+             eval q{ require }.ROLE_CLASS;
+             ROLE_CLASS->meta->apply( $caller->meta, %{$with_args} );
         }
     }
    
     sub unimport { goto $unimport; }
     *init_meta = $init_meta if defined $init_meta;
-}
-
-
-our @listener_wrappers;
-
-=classmethod method add_listener_wrapper( CodeRef $wrapper ) returns CodeRef
-
-Wrappers are called in reverse declaration order.  They take a the listener
-to be added as an argument, and return a wrapped listener.
-
-=cut
-
-sub add_listener_wrapper {
-    my( $wrapper ) = @_[1..$#_];
-    push @listener_wrappers, $wrapper;
-    return $wrapper;
-}
-
-=classmethod method remove_listener_wrapper( CodeRef $wrapper )
-
-Removes a previously added listener wrapper.
-
-=cut
-
-sub remove_listener_wrapper {
-    my( $wrapper ) = @_[1..$#_];
-    @listener_wrappers = grep { $_ != $wrapper } @listener_wrappers;
-    return;
 }
 
 
@@ -78,7 +52,6 @@ sub remove_listener_wrapper {
 Registers your class as being able to emit the event names listed.
 
 =cut
-
 
 my $stub = sub {};
 sub has_event {
@@ -105,8 +78,6 @@ no Any::Moose '::Exporter';
       }
   }
   
-  use 5.10.0;
-
   my $example = Example->new;
 
   $example->on( pinged => sub { say "Got a ping!" } );
@@ -123,6 +94,9 @@ no Any::Moose '::Exporter';
   $example->remove_listener( pinged => $listener );
 
   $example->ping(); # Does nothing
+
+=for test_synopsis
+use v5.10.0;
 
 =head1 DESCRIPTION
 
