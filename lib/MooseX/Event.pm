@@ -167,6 +167,8 @@ no MooseX::Event.
 
 =item L<MooseX::Role::Listenable>
 
+=item L<MooseX::Callbacks>
+
 =item L<Object::Event>
 
 =item L<Mixin::Event::Dispatch>
