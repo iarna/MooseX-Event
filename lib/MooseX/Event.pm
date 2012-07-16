@@ -131,7 +131,7 @@ It provides a helper declare what events your object supports:
 
 Users of your class can now call the "on" method in order to register an event handler:
 
-  $obj->on( event1 => sub { say "I has an event"; } );
+  $obj->on( event1 => event { say "I has an event"; } );
 
 And clear their event listeners with:
 
@@ -139,7 +139,7 @@ And clear their event listeners with:
 
 Or add and clear just one listener:
 
-  my $listener = $obj->on( event1 => sub { say "Event here"; } );
+  my $listener = $obj->on( event1 => event { say "Event here"; } );
   $obj->remove_listener( event1 => $listener );
 
 You can trigger events from your class with the "emit" method:
@@ -149,11 +149,11 @@ You can trigger events from your class with the "emit" method:
 Events receive the object that they're attached to as their first argument. They are almost
 a kind of fleeting sort of method:
 
-   $obj->on( event1 => sub {
+   $obj->on( event1 => event {
        my $self = shift;
        my( $arg1, $arg2, $arg3 ) = @_;
        say "Arg3 was: $arg3\n";
-   }
+   } );
 
 
 At the bottom of your class, you should make sure you clean out your name space by calling
