@@ -26,24 +26,26 @@ no Any::Moose 'Role';
   package Example {
       use MooseX::Singleton;
       use MooseX::Event;
-      
+
       with 'MooseX::Event::Role::ClassMethods';
-      
+
       has_event 'pinged';
-      
+
       sub ping {
           my $self = shift;
           $self->emit('pinged');
       }
   }
-  
-  Example->on( pinged => sub { say "Got a ping!" } );
-  Example->on( pinged => sub { say "Got another ping!" } );
+
+  use Event::Wrappable;
+
+  Example->on( pinged => event { say "Got a ping!" } );
+  Example->on( pinged => event { say "Got another ping!" } );
   Example->ping; # prints "Got a ping!" and "Got another ping!"
   Example->remove_all_listeners( "pinged" ); # Remove all of the pinged listeners
-  Example->once( pinged => sub { say "First ping." } );
+  Example->once( pinged => event { say "First ping." } );
   Example->ping; Example->ping; # Only prints "First ping." once
-  my $listener = Example->on( pinged => sub { say "Ping" } );
+  my $listener = Example->on( pinged => event { say "Ping" } );
   Example->remove_listener( pinged => $listener );
   Example->ping(); # Does nothing
 
@@ -54,10 +56,10 @@ use 5.10.0;
 
 Sometimes it's handy to be able to call object methods directly on a
 singleton class, without having to call instance yourself.  This wraps up
-the MooseX::Event Role to allow this.  Your class must provide an instance
-method that returns the singleton object.  One way to do this is with the
-MooseX::Singleton class, as in the example, but you can easily role your own
-if you prefer.
+the L<MooseX::Event::Role> to allow this.  Your class must provide an
+instance method that returns the singleton object.  One way to do this is
+with the L<MooseX::Singleton> class, as in the example, but you can easily
+role your own if you prefer.
 
 =head1 SEE ALSO
 

@@ -78,19 +78,21 @@ no Any::Moose '::Exporter';
       }
   }
   
+  use Event::Wrappable;
+  
   my $example = Example->new;
 
-  $example->on( pinged => sub { say "Got a ping!" } );
-  $example->on( pinged => sub { say "Got another ping!" } );
+  $example->on( pinged => event { say "Got a ping!" } );
+  $example->on( pinged => event { say "Got another ping!" } );
 
   $example->ping; # prints "Got a ping!" and "Got another ping!"
 
   $example->remove_all_listeners( "pinged" ); # Remove all of the pinged listeners
 
-  $example->once( pinged => sub { say "First ping." } );
+  $example->once( pinged => event { say "First ping." } );
   $example->ping; $example->ping; # Only prints "First ping." once
 
-  my $listener = $example->on( pinged => sub { say "Ping" } );
+  my $listener = $example->on( pinged => event { say "Ping" } );
   $example->remove_listener( pinged => $listener );
 
   $example->ping(); # Does nothing

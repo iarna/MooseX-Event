@@ -103,7 +103,7 @@ sub on {
     my $listener = pop;
     my $first_event = $_[0];
 
-    # We rewrap Event::Wrappable objects so that we can name them
+    # If it's not an Event::Wrappable object, make it one.
     if ( ! blessed $listener or ! $listener->isa("Event::Wrappable") ) {
         $listener = &Event::Wrappable::event( $listener );
     }
