@@ -53,10 +53,9 @@ Registers your class as being able to emit the event names listed.
 
 =cut
 
-my $stub = sub {};
 sub has_event {
     my $class = caller();
-    $class->meta->add_method( "event:$_" => $stub ) for @_;
+    $class->meta->add_method( "event:$_" => sub {} ) for @_;
 }
 
 BEGIN { *has_events = \&has_event }
