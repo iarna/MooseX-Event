@@ -158,8 +158,7 @@ BEGIN {
 
     # The first time you call one of these methods, we check to see if
     # coroutines are loaded and from that point forward only use the
-    # version appropriate to that.  The other versions should then be
-    # garbage collected.
+    # version appropriate to that.
 
     my %alternatives;
 
