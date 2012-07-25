@@ -330,7 +330,7 @@ sub remove_listener {
 
     my $oid = $listener->object_id;
     $listeners->{$event} =
-        [ grep { defined $_ and $_->object_id) != $oid } @{ $listeners->{$event} } ];
+        [ grep { defined $_ and $_->object_id != $oid } @{ $listeners->{$event} } ];
 
     if ( ! $self->event_listeners($event) and $self->event_listeners('no_listeners') ) {
         $self->emit('no_listeners', $event )
