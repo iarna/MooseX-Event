@@ -39,7 +39,7 @@ use constant ROLE_CLASS => 'MooseX::Event::Role';
              ROLE_CLASS->meta->apply( $caller->meta, %{$with_args} );
         }
     }
-   
+
     sub unimport { goto $unimport; }
     *init_meta = $init_meta if defined $init_meta;
 }
@@ -53,14 +53,27 @@ Registers your class as being able to emit the event names listed.
 
 =cut
 
+my %meta;
 sub has_event {
     my $class = caller();
-    $class->meta->add_method( "event:$_" => sub {} ) for @_;
+    for (@_) {
+        $class->meta->add_attribute(
+            "event:$_",
+            init_arg => undef,
+            is => 'ro',
+            lazy => 1,
+            default => sub {
+                require MooseX::Event::Meta;
+                MooseX::Event::Meta->new(object=>shift);
+            },
+            );
+    }
 }
 
 BEGIN { *has_events = \&has_event }
 
 no Any::Moose '::Exporter';
+
 
 1;
 
@@ -68,17 +81,17 @@ no Any::Moose '::Exporter';
 
   package Example {
       use MooseX::Event;
-      
+
       has_event 'pinged';
-      
+
       sub ping {
           my $self = shift;
           $self->emit('pinged');
       }
   }
-  
+
   use Event::Wrappable;
-  
+
   my $example = Example->new;
 
   $example->on( pinged => event { say "Got a ping!" } );
@@ -123,7 +136,7 @@ MooseX::Event is implemented as a Moose Role.  To add events to your object:
   use MooseX::Event;
 
 It provides a helper declare what events your object supports:
-  
+
   has_event 'event';
   ## or
   has_events qw( event1 event2 event3 );

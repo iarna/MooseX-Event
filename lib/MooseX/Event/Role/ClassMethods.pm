@@ -6,7 +6,7 @@ use Any::Moose 'Role';
 
 requires 'instance';
 
-around [qw( event_exists on once emit remove_all_listeners remove_listener )] => sub {
+around [qw( metaevent on once emit remove_all_listeners remove_listener )] => sub {
     my $orig = shift;
     if ( ! ref $_[0] ) {
         my $class = shift;
