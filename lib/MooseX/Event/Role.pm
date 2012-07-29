@@ -24,6 +24,12 @@ sub metaevent {
     return defined $accessor ? $self->$accessor() : undef;
 }
 
+=method method get_all_events() returns List
+
+Returns a list of all registered event names in this class and any superclasses.
+
+=cut
+
 sub get_all_events {
     my $self = shift;
     return map {substr($_,6)} grep {/^event:/} map {$_->name} $self->meta->get_all_attributes;

@@ -13,6 +13,7 @@ Called when a listener is added and no listeners were yet registered for this ev
 =cut
 
 MooseX::Event::has_event('first_listener');
+
 =event add_listener( Str $event, CodeRef $listener )
 
 Called before a listener is added.  $listener is the listener being installed.
@@ -89,6 +90,12 @@ sub listen_once {
     return $wrapped;
 }
 
+=method method stop_listener( CodeRef $listener )
+
+Stop emitting events to $listener
+
+=cut
+
 sub stop_listener {
     my $self = shift;
     my( $listener ) = @_;
@@ -106,6 +113,12 @@ sub stop_listener {
         $self->emit('no_listeners');
     }
 }
+
+=method method stop_all_listeners( CodeRef $listener )
+
+Stop emitting any events
+
+=cut
 
 sub stop_all_listeners {
     my $self = shift;
@@ -167,10 +180,9 @@ BEGIN {
         };
     }
 
-=method method emit( Str $event, *@args )
+=method method emit_self( *@args )
 
-Normally called within the class using the MooseX::Event role.  This calls all
-of the registered listeners on $event with @args.
+This calls all of the registered listeners on this event with @args.
 
 If you're using L<Coro> then each listener is executed in its own thread.
 Emit will return immediately, the event listeners won't execute until you
@@ -260,6 +272,9 @@ to use unblock_sub.
     # no_listeners fires and prints "No listeners left on ping"
 
     say "Done";
+
+=for test_synopsis
+use v5.10.0;
 
 =head1 DESCRIPTION
 
