@@ -8,23 +8,23 @@ MooseX::Event - A Node style event Role for Moose
 
 =head1 VERSION
 
-version 0.3.0
+version 0.3.0_2
 
 =head1 SYNOPSIS
 
   package Example {
       use MooseX::Event;
-      
+
       has_event 'pinged';
-      
+
       sub ping {
           my $self = shift;
           $self->emit('pinged');
       }
   }
-  
+
   use Event::Wrappable;
-  
+
   my $example = Example->new;
 
   $example->on( pinged => event { say "Got a ping!" } );
@@ -117,6 +117,8 @@ Registers your class as being able to emit the event names listed.
 
 =item L<MooseX::Role::Listenable>
 
+=item L<MooseX::Callbacks>
+
 =item L<Object::Event>
 
 =item L<Mixin::Event::Dispatch>
@@ -166,8 +168,7 @@ and may be cloned from L<git://https://github.com/iarna/MooseX-Event.git>
 
 =head2 Websites
 
-The following websites have more information about this module, and may be of help to you. As always,
-in addition to those websites please use your favorite search engine to discover more resources.
+More information can be found at:
 
 =over 4
 
@@ -184,16 +185,6 @@ L<http://metacpan.org/release/MooseX-Event>
 =head2 Bugs / Feature Requests
 
 Please report any bugs at L<https://github.com/iarna/MooseX-Event/issues>.
-
-=head2 Source Code
-
-The code is open to the world, and available for you to hack on. Please feel free to browse it and play
-with it, or whatever. If you want to contribute patches, please send me a diff or prod me to pull
-from your repository :)
-
-L<https://github.com/iarna/MooseX-Event>
-
-  git clone https://github.com/iarna/MooseX-Event.git
 
 =head1 AUTHOR
 

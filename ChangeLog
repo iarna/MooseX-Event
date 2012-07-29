@@ -1,6 +1,8 @@
 Revision history for perl module MooseX::Event
 
 {{$NEXT}}
+
+0.3.0_2   2012-07-29
 - Move event wrapping out to Event::Wrappable
 
 - Make coroutine support have lower overhead by storing the current event in
