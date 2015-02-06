@@ -124,7 +124,7 @@ place.
 Alternatively, if you just want to use a suite of classes whose use an event
 API like this one, you'll want to look at the L<ONE> module.
 ONE provides a layer on top of AnyEvent that uses MooseX::Event as it's
-interface.  This gives you an arguably nicer, and definitely more consistant
+interface.  This gives you an arguably nicer, and definitely more consistent
 interface to write your event based programs.
 
 
