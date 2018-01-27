@@ -1,14 +1,16 @@
 # ABSTRACT: A Node style event Role for Moose
 package MooseX::Event;
-use Any::Moose ();
-use Any::Moose '::Exporter';
+use Moose ();
+use Moose::Exporter;
+use MooseX::Event::Role;
+use Moose::Util qw/does_role/;
 
 use constant ROLE_CLASS => 'MooseX::Event::Role';
 
 {
-    my($import,$unimport,$init_meta) = any_moose('::Exporter')->build_import_methods(
+    my($import,$unimport,$init_meta) = Moose::Exporter->build_import_methods(
         as_is => [qw( has_event has_events )],
-        also => any_moose(),
+        also => 'Moose',
         );
 
     sub import {
@@ -34,7 +36,7 @@ use constant ROLE_CLASS => 'MooseX::Event::Role';
 
         # I would expect that 'base_class_roles' in setup_import_methods would
         # do the below, but no, it doesn't.
-        if ( ! any_moose('::Util')->can('does_role')->( $caller, ROLE_CLASS ) ) {
+        if ( ! does_role( $caller, ROLE_CLASS ) ) {
              eval q{ require }.ROLE_CLASS;
              ROLE_CLASS->meta->apply( $caller->meta, %{$with_args} );
         }
@@ -72,9 +74,7 @@ sub has_event {
 
 BEGIN { *has_events = \&has_event }
 
-no Any::Moose '::Exporter';
-
-
+no Moose;
 1;
 
 =head1 SYNOPSIS

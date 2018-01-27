@@ -1,7 +1,7 @@
 # ABSTRACT: A Node style event Role for Moose
 package MooseX::Event::Role;
 use MooseX::Event ();
-use Any::Moose 'Role';
+use Moose::Role;
 use Scalar::Util qw( refaddr reftype blessed );
 use Event::Wrappable ();
 

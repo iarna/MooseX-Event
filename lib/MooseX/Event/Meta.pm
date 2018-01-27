@@ -1,6 +1,6 @@
 # ABSTRACT: A meta object for events
 package MooseX::Event::Meta;
-use Any::Moose;
+use Moose;
 use MooseX::Event;
 
 has 'object' => (is=>'ro',weak_ref=>1);
